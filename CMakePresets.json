@@ -1,0 +1,38 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 15,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "preset-base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "IDA_SDK_DIR": "$env{IDA_ROOT}/ida-sdk"
+      }
+    },
+    {
+      "name": "msvc-x64",
+      "inherits": "preset-base",
+      "displayName": "MSVC x64 Release",
+      "toolset": "v143",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_GENERATOR_PLATFORM": "x64",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "msvc-x64",
+      "configurePreset": "msvc-x64",
+      "configuration": "Release"
+    }
+  ]
+}

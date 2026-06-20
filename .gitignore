@@ -14,7 +14,7 @@ cmake-build-*/
 *.suo
 *.user
 
-src/ida-sdk/
+idaplugin/ida-sdk/
 
 CMakeCache.txt
 CMakeFiles/
