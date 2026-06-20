@@ -1,10 +1,14 @@
-# Signature Importer
+# Oh My Dump
+
+![Banner](docs/images/banner.png)
 
 ## Description
-IDA Pro 9.x Plugin that automatically transfers the progress between dumps by using special *.json file that defines a number of fields for finding and signing addresses.
+**Oh My Dump** is built for IDA Pro 9.x and helps carry analysis results over between different versions of the target binary.
+The plugin exports analysis data and imports it into a dump from the same binary family (newer or older version), reducing the amount
+of repeated manual work needed to rename items and analyze the program's control flow.
 
 ## Requirements
-IDA Pro 9.x **only**.
+- IDA Pro 9.x **(tested only on 9.x)**.
 
 ## Transfer capabilities
 - Names (functions and variables)
@@ -14,30 +18,34 @@ IDA Pro 9.x **only**.
 - Breakpoints (anything)
 
 ## Installation
-Put it into plugins folder of **your** IDA installation.
+- Put it into plugins folder of **your** IDA installation.
 
 ## Usage
-Launch the plugin by pressing hotkey (by default “**Ctrl+Shift+F10**”) or via **Edit -> Plugin -> Signature Importer**. Select the search area in the window appeared, for large binaries **“Segment only”** or **"Custom"** is recommended.
+> To avoid repeating the same information, the import workflow is shown below. The same steps also apply to export.
 
-![Step 0](images/usage_step_0.png)
+Launch the plugin by pressing hotkey (by default “**Ctrl+Shift+F10**”) or via **Edit -> Plugin -> Oh My Dump**. 
+Select the action, search area, fields and debug flag in the settings window.
 
-When selecting **“Global”**, we skip entering segment name and address range and proceed to json file selection.\
+![Main dialog](docs/images/main-dialog.png)
+
+For large dumps, limit the search range: analyzing large address ranges can take longer than usual.
+When selecting **“Global”**, we skip entering segment name and address range and proceed to json file selection.
 If you select **“Segment only”** you will need to enter the segment name (default is .text).
 
-![Step 1](images/usage_step_1.png)
+![Segment scope](docs/images/segment-scope.png)
 
-If you select **“Custom”** you will need to enter the range: start and end address (default is 0x1000 - 0x100000).
+If you select **“Custom”** you will need to enter the range: start and end address. **(default value: ea_min | ea_max)**
 
-![Step 2](images/usage_step_2.png)
+![Custom range](docs/images/custom-range.png)
 
- Select *.json with signatures and wait for the search and signing to complete.
+Select ***.omd.json** with signatures and wait for the search and signing to complete.
 
-![Step 3](images/usage_step_3.png)
+![OMD Json select](docs/images/omd-json-select.png)
 
 ## Result
-![Step 4](images/usage_step_4.png)
+![Import result](docs/images/import-result.png)
 
-![Step 4](images/usage_step_5.png)
+![Import log](docs/images/import-log.png)
 
 ## JSON configuration format
 The plugin uses **JSON files** to define signature patterns and their associated metadata. Each pattern is an object in a JSON array.
@@ -60,22 +68,43 @@ The plugin uses **JSON files** to define signature patterns and their associated
 [
   {
     "name": "function_with_comment",
-    "signature": "E8 ? ? ? ? 0F B7 45 ? 41 B9",
+    "signature": "  E8 ? ? ? ? 0F B7 45 ? 41 B9",
     "declaration": "void* function_with_comment(int value);",
     "operations": [
-      {"insn_format": [1, 4]},
-      {"offset": 26},
-      {"insn_format": [1, 4]}
+      {
+        "insn_format": [
+          1,
+          4
+        ]
+      },
+      {
+        "offset": 26
+      },
+      {
+        "insn_format": [
+          1,
+          4
+        ]
+      }
     ],
     "comment": "Some important function for important matters",
     "color": 15658724,
-    "breakpoint": [true, 0, 0]
+    "breakpoint": [
+      true,
+      0,
+      0
+    ]
   },
   {
     "name": "global_variable",
     "signature": "48 8B 05 ?? ?? ?? ?? 4C 8B 14 D0",
     "operations": [
-      {"insn_format": [3, 4]}
+      {
+        "insn_format": [
+          3,
+          4
+        ]
+      }
     ],
     "comment": "Something very important"
   },
