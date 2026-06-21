@@ -7,15 +7,37 @@
 The plugin exports analysis data and imports it into a dump from the same binary family (newer or older version), reducing the amount
 of repeated manual work needed to rename items and analyze the program's control flow.
 
+## FLIRT & Lumina Server Diff
+The project was written before **FLIRT** gained the ability to create signatures directly from an **IDB** (**IDA Pro 8.x**).
+That said, **Oh My Dump** is still useful because it handles cases that neither **FLIRT** nor **Lumina Server** fully covers.
+
+**FLIRT** works well for recognizing functions by signature, but it is not designed to carry over the full analysis context.
+**Oh My Dump** covers a broader set of data: global variables, function and global-variable declarations, comments, colors, and breakpoints.
+
+**Lumina Server** is a more capable alternative for transferring metadata, but it has limitations too.
+**Lumina** is primarily focused on function metadata, so it does not cover global variables or breakpoints.
+It also ties data to the function's **MD5** hash, which can be inconvenient when moving analysis between modified versions of a binary.
+
+## Limitations
+Unfortunately, **Oh My Dump** has a number of limitations that may be fixed in the future.
+For now, the project supports only **x86** and **x86-64** and does not work with other architectures.
+
+Data export can also be slow: the process is single-threaded, and the current algorithm is too bad to be fast at the moment :(.
+This can take a noticeable amount of time on large dumps.
+
+The final limitation is related to filtering auto-generated IDA data.
+The rules are currently hardcoded and cannot be edited without recompiling, so in rare cases the filter may accidentally discard user data during export.
+
 ## Requirements
 - IDA Pro 9.x **(tested only on 9.x)**.
 
-## Transfer capabilities
-- Names (functions and variables)
-- Type declarations (functions and variables)
-- Comments (anything)
-- Colors (anything)
-- Breakpoints (anything)
+## Capabilities
+**Oh My Dump** can transfer the following analysis data between IDBs:
+- Function and variable names;
+- Function and global variable type declarations;
+- Comments on functions, instructions, and data items;
+- Background colors;
+- Breakpoints;
 
 ## Installation
 - Put it into plugins folder of **your** IDA installation.
@@ -118,3 +140,19 @@ The plugin uses **JSON files** to define signature patterns and their associated
   }
 ]
 ```
+
+## Build requirements
+- C++20 or later;
+- CMake 3.31 or later;
+- IDA SDK 9.x or later;
+- vcpkg;
+
+## Build
+1. Install `vcpkg` and set the `VCPKG_ROOT` environment variable.
+2. Fetch baseline: `cd $VCPKG_ROOT && git fetch origin e1dfb369fc1c6e58d5850cf67c224caa955309e5`.
+3. Set `IDA_ROOT` to your IDA installation directory.
+4. Configure: `cmake --preset msvc-x64`.
+5. Build: `cmake --build --preset msvc-x64 --config Release`.
+
+## License
+**oh-my-dump** is distributed under the [MIT License](LICENSE).

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://hcli.docs.hex-rays.com/schemas/ida-plugin.json",
+  "IDAMetadataDescriptorVersion": 1,
+  "plugin": {
+    "name": "Oh My Dump",
+    "version": "1.0.15",
+    "entryPoint": "oh-my-dump",
+    "description": "IDA Pro plugin for transferring analysis data between different versions of the same binary.",
+    "logoPath": "./omd-logo.png",
+    "urls": {
+      "repository": "https://github.com/nevergiveupcpp/oh-my-dump"
+    },
+    "authors": [{
+        "name": "nevergiveupcpp",
+        "email": "nevergiveupcxx@gmail.com"
+      }],
+    "idaVersions": [
+      "9.0",
+      "9.1",
+      "9.2",
+      "9.3"
+    ],
+    "platforms": [
+      "windows-x86_64"
+    ],
+    "license": "MIT",
+    "categories": [
+      "api-scripting-and-automation"
+    ],
+    "keywords": [
+      "automatic",
+      "binary-analysis",
+      "reverse-engineering",
+      "ida-pro",
+      "ida",
+    ]
+  }
+}
