@@ -2,7 +2,7 @@
   "$schema": "https://hcli.docs.hex-rays.com/schemas/ida-plugin.json",
   "IDAMetadataDescriptorVersion": 1,
   "plugin": {
-    "name": "Oh My Dump",
+    "name": "oh-my-dump",
     "version": "1.0.15",
     "entryPoint": "oh-my-dump",
     "description": "IDA Pro plugin for transferring analysis data between different versions of the same binary.",
@@ -32,7 +32,7 @@
       "binary-analysis",
       "reverse-engineering",
       "ida-pro",
-      "ida",
+      "ida"
     ]
   }
 }
