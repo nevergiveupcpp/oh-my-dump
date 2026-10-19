@@ -98,6 +98,13 @@ jobs:
           path: ${{ env.RELEASE_ARCHIVE }}
           if-no-files-found: error
 
+      - name: Upload plugin DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: oh-my-dump-dll-windows-x86_64
+          path: package/oh-my-dump.dll
+          if-no-files-found: error
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
@@ -116,10 +123,17 @@ jobs:
           name: oh-my-dump-windows-x86_64
           path: artifacts
 
+      - name: Download plugin DLL
+        uses: actions/download-artifact@v4
+        with:
+          name: oh-my-dump-dll-windows-x86_64
+          path: artifacts
+
       - name: Publish GitHub Release
         run: |
           gh release create "$GITHUB_REF_NAME" \
             artifacts/*.zip \
+            artifacts/*.dll \
             --verify-tag \
             --title "Oh My Dump $GITHUB_REF_NAME for IDA Pro 9.x" \
             --generate-notes
