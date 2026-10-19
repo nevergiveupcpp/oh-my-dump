@@ -1,0 +1,125 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check release version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $metadata = Get-Content -Raw ida-plugin.json | ConvertFrom-Json
+          $version = $metadata.plugin.version
+
+          if ($env:GITHUB_REF_NAME -cne "v$version") {
+            throw "Tag must match metadata version: v$version"
+          }
+
+          $header = Get-Content -Raw idaplugin/version.h
+          $match = [regex]::Match(
+            $header,
+            '(?m)^#define\s+PLUGIN_VERSION\s+"([^"]+)"'
+          )
+
+          if (!$match.Success -or $match.Groups[1].Value -cne $version) {
+            throw "PLUGIN_VERSION must match metadata version: $version"
+          }
+
+      - name: Checkout IDA SDK
+        uses: actions/checkout@v4
+        with:
+          repository: HexRaysSA/ida-sdk
+          path: .ci/ida-sdk
+
+      - name: Prepare vcpkg
+        run: |
+          git -C "$env:VCPKG_INSTALLATION_ROOT" fetch origin e1dfb369fc1c6e58d5850cf67c224caa955309e5
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+
+      - name: Configure
+        run: |
+          cmake --preset msvc-x64 `
+            -G "Visual Studio 17 2022" `
+            "-DIDA_SDK_DIR=$env:GITHUB_WORKSPACE/.ci/ida-sdk"
+
+      - name: Build
+        run: cmake --build --preset msvc-x64 --config Release --parallel
+
+      - name: Package
+        run: |
+          New-Item -ItemType Directory -Force package/docs/images | Out-Null
+
+          Copy-Item build/msvc-x64/Release/oh-my-dump.dll package/
+          Copy-Item ida-plugin.json package/
+          Copy-Item LICENSE package/
+          Copy-Item docs/images/omd-logo.png package/docs/images/
+
+          $version = (Get-Content -Raw ida-plugin.json | ConvertFrom-Json).plugin.version
+          $archive = "oh-my-dump-v$version-windows-x86_64.zip"
+          Compress-Archive -Path package/* -DestinationPath $archive
+          "RELEASE_ARCHIVE=$archive" >> $env:GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate plugin archive
+        run: |
+          python -m pip install ida-hcli
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          hcli plugin lint "$env:RELEASE_ARCHIVE"
+
+      - name: Upload plugin archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: oh-my-dump-windows-x86_64
+          path: ${{ env.RELEASE_ARCHIVE }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Download plugin archive
+        uses: actions/download-artifact@v4
+        with:
+          name: oh-my-dump-windows-x86_64
+          path: artifacts
+
+      - name: Publish GitHub Release
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            artifacts/*.zip \
+            --verify-tag \
+            --title "Oh My Dump $GITHUB_REF_NAME" \
+            --generate-notes
