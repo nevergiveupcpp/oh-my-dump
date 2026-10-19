@@ -121,5 +121,5 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             artifacts/*.zip \
             --verify-tag \
-            --title "Oh My Dump $GITHUB_REF_NAME" \
+            --title "Oh My Dump $GITHUB_REF_NAME for IDA Pro 9.x" \
             --generate-notes
