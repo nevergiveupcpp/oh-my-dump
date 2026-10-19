@@ -3,27 +3,17 @@
   "IDAMetadataDescriptorVersion": 1,
   "plugin": {
     "name": "oh-my-dump",
-    "version": "1.0.15",
     "entryPoint": "oh-my-dump",
-    "description": "IDA Pro plugin for transferring analysis data between different versions of the same binary.",
-    "logoPath": "./omd-logo.png",
-    "urls": {
-      "repository": "https://github.com/nevergiveupcpp/oh-my-dump"
-    },
-    "authors": [{
-        "name": "nevergiveupcpp",
-        "email": "nevergiveupcxx@gmail.com"
-      }],
+    "version": "1.0.16",
     "idaVersions": [
-      "9.0",
-      "9.1",
-      "9.2",
-      "9.3"
+      ">=9.0"
     ],
     "platforms": [
       "windows-x86_64"
     ],
+    "description": "IDA Pro plugin for transferring analysis data between different versions of the same binary.",
     "license": "MIT",
+    "logoPath": "./docs/images/omd-logo.png",
     "categories": [
       "api-scripting-and-automation"
     ],
@@ -33,6 +23,17 @@
       "reverse-engineering",
       "ida-pro",
       "ida"
-    ]
+    ],
+    "urls": {
+      "repository": "https://github.com/nevergiveupcpp/oh-my-dump"
+    },
+    "authors": [{
+        "name": "nevergiveupcpp",
+        "email": "nevergiveupcxx@gmail.com"
+      }],
+    "maintainers": [{
+        "name": "nevergiveupcpp",
+        "email": "nevergiveupcxx@gmail.com"
+      }]
   }
 }
