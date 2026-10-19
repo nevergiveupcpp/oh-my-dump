@@ -13,7 +13,23 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-2022
+    name: build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x86_64
+            runner: windows-2022
+            preset: msvc-x64
+            generator: Visual Studio 17 2022
+            binary: build/msvc-x64/Release/oh-my-dump.dll
+    runs-on: ${{ matrix.runner }}
+
+    env:
+      BUILD_PRESET: ${{ matrix.preset }}
+      CMAKE_GENERATOR: ${{ matrix.generator }}
+      PLUGIN_PLATFORM: ${{ matrix.platform }}
+      PLUGIN_BINARY: ${{ matrix.binary }}
 
     defaults:
       run:
@@ -23,7 +39,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check release version
+      - name: Check plugin version
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           $metadata = Get-Content -Raw ida-plugin.json | ConvertFrom-Json
@@ -58,25 +74,29 @@ jobs:
 
       - name: Configure
         run: |
-          cmake --preset msvc-x64 `
-            -G "Visual Studio 17 2022" `
+          cmake --preset "$env:BUILD_PRESET" `
             "-DIDA_SDK_DIR=$env:GITHUB_WORKSPACE/.ci/ida-sdk"
 
       - name: Build
-        run: cmake --build --preset msvc-x64 --config Release --parallel
+        run: cmake --build --preset "$env:BUILD_PRESET" --config Release --parallel
 
       - name: Package
         run: |
           New-Item -ItemType Directory -Force package/docs/images | Out-Null
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          $metadata = Get-Content -Raw ida-plugin.json | ConvertFrom-Json
+          $metadata.plugin.platforms = @($env:PLUGIN_PLATFORM)
 
-          Copy-Item build/msvc-x64/Release/oh-my-dump.dll package/
-          Copy-Item ida-plugin.json package/
+          Copy-Item $env:PLUGIN_BINARY package/
+          $metadata | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 package/ida-plugin.json
           Copy-Item LICENSE package/
           Copy-Item docs/images/omd-logo.png package/docs/images/
 
-          $version = (Get-Content -Raw ida-plugin.json | ConvertFrom-Json).plugin.version
-          $archive = "oh-my-dump-v$version-windows-x86_64.zip"
+          $version = $metadata.plugin.version
+          $archive = "release-assets/$($metadata.plugin.name)-v$version-$($env:PLUGIN_PLATFORM).zip"
           Compress-Archive -Path package/* -DestinationPath $archive
+          $extension = [System.IO.Path]::GetExtension($env:PLUGIN_BINARY)
+          Copy-Item $env:PLUGIN_BINARY "release-assets/$($metadata.plugin.name)-$($env:PLUGIN_PLATFORM)$extension"
           "RELEASE_ARCHIVE=$archive" >> $env:GITHUB_ENV
 
       - name: Set up Python
@@ -91,18 +111,11 @@ jobs:
 
           hcli plugin lint "$env:RELEASE_ARCHIVE"
 
-      - name: Upload plugin archive
+      - name: Upload plugin assets
         uses: actions/upload-artifact@v4
         with:
-          name: oh-my-dump-windows-x86_64
-          path: ${{ env.RELEASE_ARCHIVE }}
-          if-no-files-found: error
-
-      - name: Upload plugin DLL
-        uses: actions/upload-artifact@v4
-        with:
-          name: oh-my-dump-dll-windows-x86_64
-          path: package/oh-my-dump.dll
+          name: oh-my-dump-${{ matrix.platform }}
+          path: release-assets/
           if-no-files-found: error
 
   release:
@@ -117,23 +130,17 @@ jobs:
       GH_REPO: ${{ github.repository }}
 
     steps:
-      - name: Download plugin archive
+      - name: Download plugin assets
         uses: actions/download-artifact@v4
         with:
-          name: oh-my-dump-windows-x86_64
-          path: artifacts
-
-      - name: Download plugin DLL
-        uses: actions/download-artifact@v4
-        with:
-          name: oh-my-dump-dll-windows-x86_64
+          pattern: oh-my-dump-*
+          merge-multiple: true
           path: artifacts
 
       - name: Publish GitHub Release
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            artifacts/*.zip \
-            artifacts/*.dll \
+            artifacts/* \
             --verify-tag \
             --title "Oh My Dump $GITHUB_REF_NAME for IDA Pro 9.x" \
             --generate-notes
