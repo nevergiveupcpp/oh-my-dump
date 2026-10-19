@@ -16,12 +16,12 @@ endif ()
 find_library(IDA_LIBRARY
         NAMES ida ida.lib "${IDA_LIBRARY_NAME}"
         PATHS "${IDA_SDK_DIR}/src/lib"
-        PATH_SUFFIXES x64_win_vc_64
+        PATH_SUFFIXES x64_win_64 x64_win_vc_64
         NO_DEFAULT_PATH
 )
 
 if (NOT IDA_LIBRARY)
-    message(FATAL_ERROR "IDA library not found under ${IDA_SDK_DIR}/src/lib/${IDA_LIB_SUFFIX}")
+    message(FATAL_ERROR "IDA library not found under ${IDA_SDK_DIR}/src/lib (expected x64_win_64 or x64_win_vc_64).")
 endif ()
 
 get_filename_component(IDA_LIB_DIR "${IDA_LIBRARY}" DIRECTORY)
