@@ -4,34 +4,43 @@
   "plugin": {
     "name": "oh-my-dump",
     "entryPoint": "oh-my-dump",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "idaVersions": [
-      ">=9.0"
+      "9.0",
+      "9.1",
+      "9.2",
+      "9.3",
+      "9.4",
+      "9.5"
     ],
     "platforms": [
-      "windows-x86_64"
+      "windows-x86_64",
+      "windows-aarch64",
+      "linux-x86_64",
+      "linux-aarch64",
+      "macos-x86_64",
+      "macos-aarch64"
     ],
     "description": "IDA Pro plugin for transferring analysis data between different versions of the same binary.",
     "license": "MIT",
     "logoPath": "./docs/images/omd-logo.png",
     "categories": [
-      "api-scripting-and-automation"
+      "api-scripting-and-automation",
+      "collaboration-and-productivity"
     ],
     "keywords": [
-      "automatic",
-      "binary-analysis",
-      "reverse-engineering",
-      "ida-pro",
-      "ida"
+      "idb",
+      "metadata",
+      "signatures",
+      "annotations",
+      "pattern-matching",
+      "analysis-transfer",
+      "omd"
     ],
     "urls": {
       "repository": "https://github.com/nevergiveupcpp/oh-my-dump"
     },
     "authors": [{
-        "name": "nevergiveupcpp",
-        "email": "nevergiveupcxx@gmail.com"
-      }],
-    "maintainers": [{
         "name": "nevergiveupcpp",
         "email": "nevergiveupcxx@gmail.com"
       }]

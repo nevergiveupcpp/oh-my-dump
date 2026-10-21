@@ -18,6 +18,9 @@ That said, **Oh My Dump** is still useful because it handles cases that neither 
 **Lumina** is primarily focused on function metadata, so it does not cover global variables or breakpoints.
 It also ties data to the function's **MD5** hash, which can be inconvenient when moving analysis between modified versions of a binary.
 
+**Oh My Dump** is not intended to replace existing tools. It is simply another tool that helps you quickly annotate a binary
+and export your analysis as signatures, or transfer information from your **pointers.hpp** into an **IDB**.
+
 ## Limitations
 Unfortunately, **Oh My Dump** has a number of limitations that may be fixed in the future.
 For now, the project supports only **x86** and **x86-64** and does not work with other architectures.
@@ -40,7 +43,15 @@ The rules are currently hardcoded and cannot be edited without recompiling, so i
 - Breakpoints;
 
 ## Installation
-- Put it into plugins folder of **your** IDA installation.
+### Package manager
+With [HCLI](https://hcli.docs.hex-rays.com/) installed, run:
+
+```bash
+hcli plugin install oh-my-dump
+```
+
+### Manual installation
+Copy the binary or extracted ZIP contents for your platform from [Releases](https://github.com/nevergiveupcpp/oh-my-dump/releases) into **IDA's plugins** folder.
 
 ## Usage
 > To avoid repeating the same information, the import workflow is shown below. The same steps also apply to export.
@@ -73,17 +84,17 @@ Select ***.omd.json** with signatures and wait for the search and signing to com
 The plugin uses **JSON files** to define signature patterns and their associated metadata. Each pattern is an object in a JSON array.
 
 ## Field reference
-| Field                      | Required | Type | Description                                                                                                                                                                                                                                                                          |
-|----------------------------|----------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `signature`                | + | string | Byte pattern with wildcards (`?` or `??` for unknown bytes)                                                                                                                                                                                                                          |
-| `name`                     | - | string | Sets name for function/variable at the found address                                                                                                                                                                                                                                 |
-| `declaration`              | - | string | Sets function/variable type and name                                                                                                                                                                                                                                                 |
-| `comment`                  | - | string | Adds comment to address or function                                                                                                                                                                                                                                                  |
-| `color`                    | - | number | Sets background color (RGB value in decimal format)                                                                                                                                                                                                                                  |
-| `operations`               | - | array | Array with data (`offset`, `insn_format`) for calculating final effective address. Possible fields: offset, insn_format. Fields can be arranged in any order and repeated.Operations executed sequentially from lower to higher index                                                |
-| `operations[].offset`      | - | number | Is used for calculating final effective address by using basic operation (to current address += offset)                                                                                                                                                                              |
-| `operations[].insn_format` | - | array | Is used for obtaining relative offset. Calculation is performed as follows: for instruction at 0x1000 `"E8 12 34 56 78"` with format `[1,4]`: `rip = 0x1000 + 1 + 4`, `rel_offset = read_dword(0x1000 + 1)`, `final_address = rip + rel_offset`                                      |
-| `breakpoint`               | - | array | Breakpoint configuration `[exist, type, size]`. Type: 0=software+execute (default), 1=write, 2=read, 3=read/write, 4=software, 8=execute, 12=default. Size is irrelevant for software breakpoints. For hardware breakpoints size matters but can't always be set to arbitrary values |
+| Field | Type | Description | Required |
+|:------|:----:|:------------|:--------:|
+| `signature` | string | Byte pattern with wildcards (`?` or `??` for unknown bytes) | + |
+| `name` | string | Sets name for function/variable at the found address | - |
+| `declaration` | string | Sets function/variable type and name | - |
+| `comment` | string | Adds comment to address or function | - |
+| `color` | number | Sets background color (RGB value in decimal format) | - |
+| `operations` | array | Array with data (`offset`, `insn_format`) for calculating final effective address. Possible fields: offset, insn_format. Fields can be arranged in any order and repeated.Operations executed sequentially from lower to higher index | - |
+| `operations[].offset` | number | Is used for calculating final effective address by using basic operation (to current address += offset) | - |
+| `operations[].insn_format` | array | Is used for obtaining relative offset. Calculation is performed as follows: for instruction at 0x1000 `"E8 12 34 56 78"` with format `[1,4]`: `rip = 0x1000 + 1 + 4`, `rel_offset = read_dword(0x1000 + 1)`, `final_address = rip + rel_offset` | - |
+| `breakpoint` | array | Breakpoint configuration `[exist, type, size]`. Type: 0=software+execute (default), 1=write, 2=read, 3=read/write, 4=software, 8=execute, 12=default. Size is irrelevant for software breakpoints. For hardware breakpoints size matters but can't always be set to arbitrary values | - |
 
 ## Example configuration
 ```json
@@ -151,8 +162,8 @@ The plugin uses **JSON files** to define signature patterns and their associated
 1. Install `vcpkg` and set the `VCPKG_ROOT` environment variable.
 2. Fetch baseline: `cd $VCPKG_ROOT && git fetch origin e1dfb369fc1c6e58d5850cf67c224caa955309e5`.
 3. Set `IDA_ROOT` to your IDA installation directory.
-4. Configure: `cmake --preset msvc-x64`.
-5. Build: `cmake --build --preset msvc-x64 --config Release`.
+4. Configure: `cmake --preset <platform>`.
+5. Build: `cmake --build --preset <platform> --config Release`.
 
 ## License
 **oh-my-dump** is distributed under the [MIT License](LICENSE).

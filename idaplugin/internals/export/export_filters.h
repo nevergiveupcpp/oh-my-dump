@@ -12,7 +12,7 @@ namespace omd::export_filters {
     };
 
     struct rule {
-        match match{};
+        omd::export_filters::match match{};
         std::string_view pattern{};
     };
 
