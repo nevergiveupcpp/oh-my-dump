@@ -20,16 +20,33 @@ jobs:
         include:
           - platform: windows-x86_64
             runner: windows-2022
-            preset: msvc-x64
-            generator: Visual Studio 17 2022
-            binary: build/msvc-x64/Release/oh-my-dump.dll
+            preset: windows-x86-64
+
+          - platform: windows-aarch64
+            runner: windows-2022
+            preset: windows-arm64
+
+          - platform: linux-x86_64
+            runner: ubuntu-24.04
+            preset: linux-x86-64
+
+          - platform: linux-aarch64
+            runner: ubuntu-24.04-arm
+            preset: linux-arm64
+
+          - platform: macos-x86_64
+            runner: macos-15-intel
+            preset: macos-x86-64
+
+          - platform: macos-aarch64
+            runner: macos-15
+            preset: macos-arm64
+
     runs-on: ${{ matrix.runner }}
 
     env:
       BUILD_PRESET: ${{ matrix.preset }}
-      CMAKE_GENERATOR: ${{ matrix.generator }}
       PLUGIN_PLATFORM: ${{ matrix.platform }}
-      PLUGIN_BINARY: ${{ matrix.binary }}
 
     defaults:
       run:
@@ -67,7 +84,12 @@ jobs:
 
       - name: Prepare vcpkg
         run: |
-          git -C "$env:VCPKG_INSTALLATION_ROOT" fetch origin e1dfb369fc1c6e58d5850cf67c224caa955309e5
+          if ($IsMacOS) {
+            $env:VCPKG_INSTALLATION_ROOT = "/usr/local/share/vcpkg"
+          }
+
+          $manifest = Get-Content -Raw vcpkg.json | ConvertFrom-Json
+          git -C "$env:VCPKG_INSTALLATION_ROOT" fetch origin $manifest.'builtin-baseline'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
@@ -82,21 +104,23 @@ jobs:
 
       - name: Package
         run: |
+          cmake --install "build/$env:BUILD_PRESET" --config Release --prefix package
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $binary = Get-ChildItem -LiteralPath package -File
+
           New-Item -ItemType Directory -Force package/docs/images | Out-Null
-          New-Item -ItemType Directory -Force release-assets | Out-Null
+          New-Item -ItemType Directory -Force artifacts | Out-Null
           $metadata = Get-Content -Raw ida-plugin.json | ConvertFrom-Json
           $metadata.plugin.platforms = @($env:PLUGIN_PLATFORM)
 
-          Copy-Item $env:PLUGIN_BINARY package/
           $metadata | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 package/ida-plugin.json
           Copy-Item LICENSE package/
           Copy-Item docs/images/omd-logo.png package/docs/images/
 
           $version = $metadata.plugin.version
-          $archive = "release-assets/$($metadata.plugin.name)-v$version-$($env:PLUGIN_PLATFORM).zip"
+          $archive = "artifacts/$($metadata.plugin.name)-v$version-$($env:PLUGIN_PLATFORM).zip"
           Compress-Archive -Path package/* -DestinationPath $archive
-          $extension = [System.IO.Path]::GetExtension($env:PLUGIN_BINARY)
-          Copy-Item $env:PLUGIN_BINARY "release-assets/$($metadata.plugin.name)-$($env:PLUGIN_PLATFORM)$extension"
+          Copy-Item $binary.FullName "artifacts/$($metadata.plugin.name)-$($env:PLUGIN_PLATFORM)$($binary.Extension)"
           "RELEASE_ARCHIVE=$archive" >> $env:GITHUB_ENV
 
       - name: Set up Python
@@ -115,7 +139,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: oh-my-dump-${{ matrix.platform }}
-          path: release-assets/
+          path: artifacts/
           if-no-files-found: error
 
   release:
