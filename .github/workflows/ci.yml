@@ -1,10 +1,10 @@
-name: build
+name: CI
 
 on:
   push:
+    tags: ["v*"]
     branches: [main]
-    tags:
-      - "v*"
+
   pull_request:
     branches: [main]
 
@@ -12,8 +12,33 @@ permissions:
   contents: read
 
 jobs:
+  clang-format:
+    name: Run Clang-Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install clang-format 22
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22
+          sudo apt-get update
+          sudo apt-get install -y clang-format-22
+
+      - name: Check formatting
+        run: |
+          find idaplugin \( -name "*.h" -o -name "*.cpp" \) | \
+          xargs clang-format-22 --dry-run --Werror
+
+
   build:
-    name: build (${{ matrix.platform }})
+    name: Build / ${{ matrix.platform }}
+    needs: [clang-format]
     strategy:
       fail-fast: true
       matrix:
@@ -53,7 +78,7 @@ jobs:
         shell: pwsh
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -98,9 +123,25 @@ jobs:
           "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
       - name: Configure
+        env:
+          CMAKE_EXPORT_COMPILE_COMMANDS: ${{ matrix.platform == 'linux-x86_64' && 'ON' || 'OFF' }}
+
         run: |
           cmake --preset "$env:BUILD_PRESET" `
             "-DIDA_SDK_DIR=$env:GITHUB_WORKSPACE/.ci/ida-sdk"
+
+      - name: Run clang-tidy
+        if: matrix.platform == 'linux-x86_64'
+        shell: bash
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 19
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy-19
+
+          find idaplugin -name "*.cpp" -print0 | \
+          xargs -0 -r -I{} clang-tidy-19 {} -p "build/$BUILD_PRESET" --header-filter=".*idaplugin/.*"
 
       - name: Build
         run: cmake --build --preset "$env:BUILD_PRESET" --config Release --parallel
@@ -146,6 +187,7 @@ jobs:
           if-no-files-found: error
 
   release:
+    name: Publish Release
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
