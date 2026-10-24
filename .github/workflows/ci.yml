@@ -35,10 +35,56 @@ jobs:
           find idaplugin \( -name "*.h" -o -name "*.cpp" \) | \
           xargs clang-format-22 --dry-run --Werror
 
+  clang-tidy:
+    name: Run Clang-Tidy
+    runs-on: ubuntu-24.04
+
+    env:
+      BUILD_PRESET: linux-x86-64
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Checkout IDA SDK
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          repository: HexRaysSA/ida-sdk
+          path: .ci/ida-sdk
+
+      - name: Install clang-tidy 19
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 19
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy-19
+
+      - name: Prepare vcpkg
+        run: |
+          baseline=$(jq -r '."builtin-baseline"' vcpkg.json)
+          git -C "$VCPKG_INSTALLATION_ROOT" fetch origin "$baseline"
+          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
+
+      - name: Configure
+        run: |
+          cmake --preset "$BUILD_PRESET" \
+            "-DIDA_SDK_DIR=$GITHUB_WORKSPACE/.ci/ida-sdk" \
+            "-DCMAKE_CXX_CLANG_TIDY=clang-tidy-19;--header-filter=.*idaplugin/.*"
+
+      - name: Run clang-tidy
+        run: cmake --build --preset "$BUILD_PRESET" --config Release --parallel
 
   build:
     name: Build / ${{ matrix.platform }}
-    needs: [clang-format]
+    needs: [clang-format, clang-tidy]
     strategy:
       fail-fast: true
       matrix:
@@ -123,25 +169,9 @@ jobs:
           "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
 
       - name: Configure
-        env:
-          CMAKE_EXPORT_COMPILE_COMMANDS: ${{ matrix.platform == 'linux-x86_64' && 'ON' || 'OFF' }}
-
         run: |
           cmake --preset "$env:BUILD_PRESET" `
             "-DIDA_SDK_DIR=$env:GITHUB_WORKSPACE/.ci/ida-sdk"
-
-      - name: Run clang-tidy
-        if: matrix.platform == 'linux-x86_64'
-        shell: bash
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 19
-          sudo apt-get update
-          sudo apt-get install -y clang-tidy-19
-
-          find idaplugin -name "*.cpp" -print0 | \
-          xargs -0 -r -I{} clang-tidy-19 {} -p "build/$BUILD_PRESET" --header-filter=".*idaplugin/.*"
 
       - name: Build
         run: cmake --build --preset "$env:BUILD_PRESET" --config Release --parallel
@@ -191,6 +221,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
 
