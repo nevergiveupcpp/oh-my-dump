@@ -162,8 +162,8 @@ The plugin uses **JSON files** to define signature patterns and their associated
 1. Install `vcpkg` and set the `VCPKG_ROOT` environment variable.
 2. Fetch baseline: `cd $VCPKG_ROOT && git fetch origin e1dfb369fc1c6e58d5850cf67c224caa955309e5`.
 3. Set `IDA_ROOT` to your IDA installation directory.
-4. Configure: `cmake --preset <platform>`.
-5. Build: `cmake --build --preset <platform> --config Release`.
+4. Configure: `cmake --preset <preset>`.
+5. Build: `cmake --build --preset <preset> --config <configuration> --parallel`.
 
 ## License
 **oh-my-dump** is distributed under the [MIT License](LICENSE).
