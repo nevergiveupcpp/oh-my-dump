@@ -15,7 +15,7 @@ jobs:
   build:
     name: build (${{ matrix.platform }})
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - platform: windows-x86_64
@@ -55,6 +55,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Check plugin version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -79,6 +81,7 @@ jobs:
       - name: Checkout IDA SDK
         uses: actions/checkout@v7
         with:
+          persist-credentials: false
           repository: HexRaysSA/ida-sdk
           path: .ci/ida-sdk
 
